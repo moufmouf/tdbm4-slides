@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>TDBM 4 - What's new</title>
+
+		<meta name="description" content="TDBM 4 presentation slides">
+		<meta name="author" content="David Negrier">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<link href="https://netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+		
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>TDBM 4</h1>
+					<h3>The PHP ORM that understands your data model</h3>
+					<p>
+						<small>Created by <a href="http://www.thecodingmachine.com">TheCodingMachine</a> / <a href="http://twitter.com/david_negrier">@david_negrier</a></small>
+					</p>
+				</section>
+
+				<section>
+					<h2>What is an ORM?</h2>
+					<p>
+						An ORM is a library that <strong>maps</strong> your database records to your objects.
+					</p>
+					<img data-src="map.png" alt="Map">
+				</section>
+				
+				<section>
+					<h2>There are actually two kinds of ORMs</h2>
+					<p>
+						In some libraries, everything starts with the database model.
+						<img data-src="dbmodel_generates_classes.png"><br/>
+						This is sometimes called "ActiveRecord ORMs".
+						TDBM is part of this category. It's maybe the most advanced ORM when it comes to understanding your data model and translating it to actual PHP classes.
+					</p>
+				</section>
+
+				<section>
+					<h2>There are actually two kinds of ORMs</h2>
+					<p>
+						In other libraries, everything starts with the PHP classes.
+						<img data-src="classes_generates_dbmodel.png"><br/>
+						Doctrine ORM is (somewhat) part of these tools.
+					</p>
+				</section>
+
+				<section>
+					<section>
+						<h2>Active records... the pros and the cons</h2>
+					</section>
+					<section>
+						<i class="fa fa-thumbs-up fa-3x"></i> 
+						<h2>Great for migrating an existing application</h2>
+						<p>The data model is already available</p>
+					</section>
+					<section>
+						<i class="fa fa-thumbs-down fa-3x"></i> 
+						<h2>Objects inherit a base class from the ORM</h2>
+						<p>The objects are not owned by the application developer. They are ultimately owned by the ORM tool.
+						This can have impacts when migrating from one version to another.</p>
+					</section>
+					<section>
+						<i class="fa fa-thumbs-down fa-3x"></i> 
+						<h2>Not ideal for DDD</h2>
+						<p>If you are into Domain Driven Development, you will have to write your domain classes once, and map them to the classes of the ORM. This means 2 classes for the same model. Do not do that. If you have a complex model and want to do DDD, use Doctrine!</p>
+					</section>
+					<section>
+						<i class="fa fa-thumbs-up fa-3x"></i> 
+						<h2>Great for performance</h2>
+						<p>Since the objects are owned by the ORM tool, the ORM can apply strong optimizations technique to these objects.</p>
+					</section>
+					<section>
+						<i class="fa fa-thumbs-up fa-3x"></i> 
+						<h2>Great for simple to medium-sized projects</h2>
+						<p>Active records (and TDBM in particular) works great for simple to medium-sized projects where your database structure maps closely your screens structure (CRUD design)</p>
+						<p>For more complex projects, <strong>use Doctrine ORM</strong>.</p>
+					</section>
+				</section>
+
+				<section>
+					<h2>TDBM philosophy</h2>
+					<p>
+						Your database model is <strong>meaningful</strong>. TDBM will do its best to understand it and to generate the object model that maps your database model as closely as possible.
+					</p>
+				</section>
+
+				<section>
+					<h2>A bit of vocabulary</h2>
+					<ul>
+						<li>
+							<strong>Bean</strong>: A bean is a PHP class that <strong>maps</strong> a table row. There is ~ one class per table. For instance, the <code>UserBean</code> class will map the <code>users</code> table. Aka <i>entities</i> in Doctrine ORM.
+						</li>
+						<li>
+							<strong>DAO</strong>: A DAO is a PHP service class that contains method to access beans. There is ~ one DAO per table. For instance, the <code>UserDao</code> contains methods to access the <code>users</code> table. Aka <i>repositories</i> in Doctrine ORM.
+						</li>
+					</ul>
+				</section>
+				
+				<section>
+					<h2>A bit of vocabulary</h2>
+					<ul>
+						<li>
+							<strong>TDBMService</strong>: The main class of TDBM. It contains all the logic. In TDBM, you never use the <code>TDBMService</code> directly. Instead, you use DAOs.
+						</li>
+						<li>
+							<strong>DAOFactory</strong>: A simple utility class that refers all DAOs. Use with care.
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>A bit of vocabulary</h2>
+					<ul>
+						<li>
+							<strong>DBALConnection</strong>: The TDBMService uses a Doctrine DBAL (Doctrine Database Abstraction Layer) to connect to the database. It makes TDBM available on all platforms supported by Doctrine (i.e. almost all databases out there).
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Generating DAOs and Beans</h2>
+						In TDBM 4.0, the easiest way to generate DAOs and Beans is through the Mouf UI.<br/>
+						<img src="images/generate_daos.png" width="60%" />
+				</section>
+
+				<section data-markdown>
+					##Generating DAOs and Beans
+					Alternatively, if you are not using Mouf, you can use the `TDBMService::generateAllDaosAndBeans()` method.
+				</section>
+
+				<section data-markdown>
+					##Generating DAOs and Beans
+					In TDBM 4.1, I plan to add a Symfony 2 console command too, and more integration with other frameworks.
+				</section>
+
+				<section data-markdown>
+					#Getting started!
+				</section>
+
+				<section data-markdown>
+					##Creating a bean
+
+					```php
+					$john = new PersonBean('John Doe', new DateTime());
+
+					// Write values:
+					$john->setName('John Wayne');
+
+					// Read values:
+					$name = $john->getName();
+
+					$personDao->save($john);
+					```
+
+					You use the constructor to build your bean. All not nullable columns are parameters in the constructor.
+
+					TDBM will generate for you getters and setters.
+
+					SQL date columns are converted to PHP `DateTime` objects.
+
+					SQL enum columns are not supported yet (coming in TDBM 4.1).
+
+				</section>
+
+				<section data-markdown>
+					##Getting a bean by ID
+
+					```php
+					// Let's get the bean
+					$person = $personDao->getById(1);
+
+					// Let's display the name
+					echo $person->getName();
+					```
+
+					Supports multi-column primary keys (pass an array of column=>values).
+				</section>
+
+				<section data-markdown>
+					##Getting all beans of a table
+
+					```php
+					// Let's get the list of users
+					$userList = $userDao->findAll();
+
+					// Let's display the names
+					foreach ($userList as $userBean) {
+						/* @var $userBean UserBean */
+						echo $userBean->getName()."\n";
+					}
+					```
+				</section>
+
+
+				<section data-markdown>
+					##Filtering beans
+
+					```php
+					class CountryDao extends CountryBaseDao
+					{
+						/**
+						 * Returns the list of countries starting with $firstLetter
+						 *
+						 * @param string $firstLetter
+						 * @return CountryBean[]
+						 */
+						public function getCountriesByLetter($firstLetter) {
+							return $this->find(
+								"label LIKE :label",
+								[ "label" => $firstLetter.'%' ]);
+						}
+					}
+					```
+
+					The `CountryDao` class can safely be edited. Never edit the `CountryBaseDao` as it is regenerated by TDBM
+					on every DB model change.
+				</section>
+
+				<section data-markdown>
+					##Filtering beans
+
+					**Important!** The `find` method is `protected`. You should only call it from within DAOs.
+					This way, SQL code is restricted into the DAO and does not leak into the outside world.
+				</section>
+
+				<section data-markdown>
+					##Filtering beans
+
+					**VERY IMPORTANT!** Never ever ever concatenate user input in the SQL string. Use parameters instead.
+
+					1. It is a security issue (SQL injection)
+					2. It prevents TDBM from caching the structure of the request and will lead to *extremely poor performance*
+				</section>
+
+				<section data-markdown>
+					Understood?
+					#NEVER CONCATENATE SQL STRINGS!
+
+					```php
+					// BAD
+					$list = $this->find("name LIKE '".$firstLetter.'%"' );
+
+					// GOOD
+					$list = $this->find("label LIKE :label",
+						[ "label" => $firstLetter.'%' ]);
+					```
+				</section>
+
+				<section data-markdown>
+					##Magic parameters
+
+					```php
+					class ProductDao extends ProductBaseDao {
+
+						public function getProductsByCategoryAndStore(
+								CategoryBean $category = null,
+								StoreBean $store = null) {
+
+							return $this->find(
+								"category_id = :category AND store_id = :store",
+								[
+									"category" => $category?$category->getId():null,
+									"store" => $store?$store->getId():null
+								]);
+						}
+					}
+					```
+
+					If the $category or $store is `null`, the `category_id` or `store_id` field will be completely discarded from the SQL.
+
+				</section>
+
+				<section data-markdown>
+					##Magic parameters
+
+					If a parameter is `null`, the filter field is rewritten to remove the part of the query that contains the null value.
+
+					```
+					"category_id = :category AND store_id = :store",
+					[
+						"category" => 42,
+						"store" => null
+					]
+					```
+
+					will result in the SQL filter
+
+					```
+					category_id = 42
+					```
+
+					See how the `store_id` has disappeared?
+				</section>
+
+
+				<section data-markdown>
+				##Getting only one record
+
+				If you are confident that your query will only ever return one record, then, you can use the `findOne` method instead of `find`.
+
+				```php
+				class UserDao extends UserBaseDao {
+
+					/**
+					 * Returns a user by login
+					 *
+					 * @param string $login
+					 * @return UserBean|null
+					 */
+					public function getUserByLogin($login) {
+						return $this->findOne("login = :login", [ "login" => $login ]);
+					}
+				}
+				```
+				</section>
+
+				<section data-markdown>
+				##Indexes are your friend
+
+				TDBM detects indexes and generates DAO methods for you.
+
+				Here is a sample:
+
+				```sql
+				CREATE INDEX users_status_idx ON users (status);
+				```
+
+				The `users` table has an index on the `status` column.
+
+				Automatically, TDBM will generate a `findByStatus` method in the `UserBaseDao` class:
+
+				```
+				$users = $userDao->findByStatus('on');
+				```
+				</section>
+
+
+				<section data-markdown>
+				##Unique indexes are your friend
+
+				But wait, there is more! What about unique indexes?
+
+				```sql
+				CREATE UNIQUE INDEX users_login_idx ON users (login);
+				```
+
+				TDBM will generate a `findOneByLogin` method:
+
+				```
+				$user = $userDao->findOneByLogin('alice');
+				```
+
+				Please note how a **unique** index generates a `findOneBy...` method instead of a `findBy...` method.
+				</section>
+
+
+				<section data-markdown>
+				##Multi columns indexes are your friend
+
+				Finally, TDBM can also deal with multi-columns indexes, or indexes on foreign keys:
+
+				```sql
+				CREATE INDEX users_status_country_idx ON users (status, country_id);
+				```
+
+				This index on both the `status` and the `country_id` column will be turned into a `findByLoginAndCountry` method:
+
+				```
+				$country = $countryDao->getById(1);
+				$user = $userDao->findByLoginAndCountry('on', $country);
+				```
+
+				Notice how the parameter passed for the for foreign key is a bean and not an ID.
+				</section>
+
+
+				<section data-markdown>
+					# Navigating the object model
+				</section>
+
+				<section data-markdown>
+					## Many to one relationships
+
+					![Users and countries](images/users_countries.png)
+
+					So what if I want to get the name of the country in which the first user is located?
+
+					```php
+					// Let's get the user bean
+					$userBean = $userDao->getById(1);
+
+					// Let's get the country bean
+					$countryBean = $userBean->getCountry();
+
+					// Let's display the country name
+					echo $countryBean->getName();
+					```
+
+				</section>
+
+				<section data-markdown>
+				## Many to one relationships
+
+				Of course, there is also a setter:
+
+				```php
+				$userBean->setCountry($countryBean);
+				```
+
+				Notice how you set an object rather than an ID.
+				</section>
+
+				<section data-markdown>
+				###One to many relationships
+
+				![Users and countries](images/users_countries.png)
+
+				Ok. What, now, if I want to find a list of users from a particular country?
+
+				```php
+				// Let's get the country bean
+				$countryBean = $countryDao->getById(1);
+
+				// Let's get the users from that country
+				$userBeans = $countryBean->getUsers();
+				```
+				</section>
+
+				<section data-markdown>
+				##Many to many relationships
+
+				![Users and roles](images/users_roles.png)
+
+				TDBM can **automatically detect** pivot tables in your data model.
+
+				```php
+				// Getter
+				$rolesBean = $userBean->getRoles();
+
+				// Adder
+				$userBean->addRole($roleBean);
+
+				// Remover
+				$userBean->removeRole($roleBean);
+
+				// Check existence
+				$hasRole = $userBean->hasRole($roleBean);
+				```
+				</section>
+				<section data-markdown>
+				##Many to many relationships
+
+				Pivot tables have **no DAO and no Beans** associated.
+
+				Many to many relationships are symmetrical. Therefore, you will find the same methods in the `RoleBean` class:
+
+				```php
+				// Getter
+				$usersBean = $roleBean->getUsers();
+
+				// Adder
+				$userBean->addUser($roleBean);
+
+				// Remover
+				$userBean->removeUser($roleBean);
+
+				// Check existence
+				$hasUser = $roleBean->hasUser($roleBean);
+				```
+				</section>
+
+				<section data-markdown>
+				##Many to many relationships
+
+				Unlike in Doctrine, TDBM does not need to have a notion of *owning* and *inverse* side of a many to many relationship.
+
+
+
+				```php
+				$roleBean = new RoleBean("Admin");
+				$rightBean = new RightBean("CAN_ACCESS_EVERYTHING");
+
+				$roleBean->addRight($rightBean);
+
+				foreach ($rightBean->getRoles() as $role) {
+					echo $role->getName()."\n";
+				}
+				// Will display "Admin".
+				```
+
+				Works in TDBM only! Do not try the code above with a Doctrine entity... :)
+
+				</section>
+
+				<section data-markdown>
+					#Joins ans filters
+				</section>
+
+				<section data-markdown>
+					##Simple joins
+
+					TDBM writes joins for you!
+
+					```php
+					class UserDao extends UserBaseDao {
+						public function getUsersByCountryName($countryName) {
+							// Behold the magic!
+							return $this->find(
+								"country.name LIKE :country",
+								[ 'country' => $countryName.'%' ] );
+						}
+					}
+					```
+
+					Here, we called the `find` method passing a filter on the `name` column of the `country` table.
+
+					Magic provided by [MagicQuery](http://mouf-php.com/packages/mouf/magic-query/README.md).
+					Works with **any** table of your data model (not only adjacent tables).
+
+				</section>
+
+				<section data-markdown>
+					##Filtering by ID/bean
+
+					Most of the time, of course, you will not pass the name of the country but the ID of the country. Actually,
+					using TDBM you can just pass the object. Have a look!
+
+					```php
+					class UserDao extends UserBaseDao {
+						public function getUsersByCountry(CountryBean $countryBean) {
+							return $this->find($countryBean);
+						}
+					}
+					```
+				</section>
+
+				<section data-markdown>
+					##Complex joins
+
+					![Users, roles and rights](images/user_role_right.png)
+
+					So now, what if I want to find what rights the user "Robert Marley" has?
+
+					```php
+					class RoleDao extends RoleBaseDao {
+						public function getRolesForUser(UserBean $user) {
+							// Shazam!
+							return $this->find($user);
+						}
+					}
+					```
+
+					TDBM finds the shortest path between 2 tables and performs the join.
+
+				</section>
+
+				<section data-markdown>
+					##Simplified filter syntax
+
+					Syntactic sugar: if your filter is only made of "=" and "AND" statements, you can use the shortcut "array" syntax in your queries.
+					Here, we filter a `products` table by `category_id` and `status`:
+
+					```php
+					class ProductDao extends ProductBaseDao {
+						public function getByCategoryAndStatus(
+									int $category_id, int $status)
+						{
+							return $this->find([
+								'category_id' => $category_id,
+								'status' => $status,
+							]);
+						}
+					}
+					```
+				</section>
+
+				<section data-markdown>
+				Ordering
+				--------
+
+				You can get your results in a specific order using the third parameter of the `find` method:
+
+				```php
+				class UserDao extends UserBaseDao {
+					public function getUsersByAlphabeticalOrder() {
+						return $this->find(null, [], 'name ASC');
+					}
+				}
+				```
+				</section>
+
+				<section data-markdown>
+					#About result sets
+				</section>
+
+
+				<section data-markdown>
+				Paginating data with limits and offsets
+				---------------------------------------
+
+				The result of a `find` or `findAll` method is an iteratable object. This object can be paginated (it implements the Porpaginas interface).
+
+				If you want to limit the number of records returned, or start at a given offset, you can use the `take` method.
+
+				```php
+				$users = $userDao->findAll();
+
+				$page = $users->take(0, 10);
+
+				// Iterate only the first 10 records
+				foreach ($page as $user) {
+					// Do stuff...
+				}
+				```
+				</section>
+
+				<section data-markdown>
+					Paginating data with limits and offsets
+					---------------------------------------
+
+					There are a number of very useful methods on result sets and pages:
+
+					```php
+					$users = $userDao->findAll();
+					echo "Total count: ".$users->count();
+
+					$page = $users->take(0, 10);
+
+					echo "Page count: ".$page->count();
+					echo "Total count: ".$page->totalCount();
+
+					// Cast to a simple array
+					$pageAsArray = $page->toArray();
+					```
+				</section>
+
+				<section data-markdown>
+					Utility methods on result sets
+					------------------------------
+
+					You can get the first item of a result set with the `first` method:
+
+					```php
+					$users = $userDao->findAll();
+
+					$firstUser = $users->first();
+					```
+
+					Note: when you use the `first` method, TDBM appends `LIMIT 1 OFFSET 0` to your query to fetch
+					only one row. Also, the result set contains no result, `null` is returned.
+				</section>
+
+				<section data-markdown>
+					Utility methods on result sets
+					------------------------------
+
+					You can directly apply a function to all elements of a result set:
+
+					```php
+					$users = $userDao->findAll();
+
+					$userNames = $users->map(function(UserBean $user) {
+						return $user->getName();
+					});
+					// $userNames is an array of names!
+					```
+				</section>
+
+				<section data-markdown>
+					Array versus cursor result sets
+					-------------------------------
+
+					By default, result sets can be accessed as arrays:
+
+					```php
+					$users = $userDao->findAll();
+
+					echo $users[0]->getName;
+					```
+
+					For very large datasets, this would fill memory. Instead, use the cursor mode (fifth parameter of `find` method):
+
+					```php
+					class UserDao extends UserBaseDao {
+						public function getUsersInCursorMode()
+						{
+							return $this->find(null, [], null, [],
+								TDBMService::MODE_CURSOR);
+						}
+					}
+					```
+				</section>
+
+				<section data-markdown>
+					Fetching multiple tables in one query
+					-------------------------------------
+
+					Sometimes, you want all users and you know you will need to fetch all countries associated.
+					In SQL, this can be done in one query.
+
+					```php
+					$users = $userDao->findAll();
+
+					foreach ($users as $user) {
+						echo $user->getCountry()->getName();
+					}
+					```
+
+					By default, each time you call the `getCountry()` method, TDBM will perform a query in database
+					if the country has not been fetched yet. It can be costly.
+				</section>
+
+				<section data-markdown>
+					Fetching multiple tables in one query
+					-------------------------------------
+
+					Good news! You can ask TDBM to fetch the countries table while fetching the users (in the same query).
+					This is the 4th parameter of the `find method`:
+
+					```php
+					class UserDao extends UserBaseDao {
+						public function getUsersOptimized()
+						{
+							return $this->find(null, [], null, [ 'country' ]);
+						}
+					}
+					```
+				</section>
+
+				<section data-markdown>
+					#Inheritance
+				</section>
+
+				<section data-markdown>
+					##Inheritance
+
+					In a database, inheritance can be represented this way:
+
+					![Hierarchy](images/hierarchy.png)
+
+					TDBM will generate an inheritance hierarchy between the beans of these tables:
+
+					`UserBean` > `UserBaseBean` > `ContactBean` > `ContactBaseBean` > `PersonBean`  > `PersonBaseBean` > `AbstractTDBMObject`
+
+				</section>
+
+				<section data-markdown>
+					##Inheritance
+
+					This means you can do things like:
+
+					```php
+					// The email column belongs to the contact table
+					// not the user.
+					// But this is ok!
+					$userBean->setEmail('foo@bar.com');
+					```
+
+					Also, you only save the bean once and all three tables are changed.
+				</section>
+
+
+
+
+				<section data-markdown>
+					#JSON serialization
+				</section>
+
+
+				<section data-markdown>
+					##JSON serialization
+					Serialization works this way:
+
+					- Simple columns => simple copy.
+					- Date columns => cast to ISO 8601 format
+					- If a column is a foreign key, it is not serialized in the JSON object (you will not see the ID of the foreign key in the object).
+					Instead, the whole object pointed at is embedded in the JSON serialization. This is however not recursive (inner objects
+					of the embedded object are not embedded).
+					- Finally, many to many relationships are embedded too.
+				</section>
+
+				<section data-markdown>
+					##JSON serialization sample
+
+					```json
+					{
+						"id": 4,
+						"name": "Bill Shakespeare",
+						"createdAt": "2015-10-24T13:57:13+00:00",
+						"email": "bill@shakespeare.com",
+						"country": {
+							"id": "2",
+							"label": "UK"
+						},
+						"roles": [
+							{
+								"id": 2,
+								"name": "Writers"
+							}
+						]
+					}
+					```
+				</section>
+
+				<section>
+					<h1>Questions?</h1>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
